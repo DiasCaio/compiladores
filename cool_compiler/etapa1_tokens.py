@@ -3,13 +3,9 @@ from enum import Enum, auto
 from typing import Any, Optional
 
 #Herda de Enum para criar uma lista fechada de tokens
+#Usando Enum apenas para prevenção de erros silenciosos, assim se eu comparar "Class" com "class", o Python vai reclamar que não são do mesmo tipo
 class TokenType(Enum):
-    """Todos os tipos de token que o léxico de COOL pode produzir.
-
-    Cada nome aqui é o equivalente, em Python, a uma linha `%token` de um
-    arquivo .y do bison: é só um rótulo que identifica a categoria do
-    token, sem nenhum valor numérico que importe.
-    """
+    #Todos os tipos de token que o léxico de COOL pode produzir.
 
     # --- Palavras-chave (case-insensitive) ---
     CLASS = auto()
@@ -83,8 +79,15 @@ class Token:
     lexeme: str
     line: int
     value: Optional[Any] = None
+    #Value guarda o conteúdo já processado do token, por exemplo, o valor numérico de um INT_CONST ou o valor booleano de um BOOL_CONST. 
+    #Para tokens que não têm valor semântico, value é None.
+    #Então em strings com \n, ele exibe o valor real da string, com a quebra de linha 
+
 
     def __repr__(self) -> str:
         if self.value is not None:
             return f"#{self.line} {self.type.name} {self.value!r}"
         return f"#{self.line} {self.type.name} {self.lexeme!r}"
+    #!r serve pra mostrar o valor real do objeto, por exemplo, se for uma string com \n, 
+    #ele exibe o valor real da string, com \n exposto. Fiz isso apenas para a visualização do token, 
+    #não para o valor semântico, que continua sendo o valor real da string.

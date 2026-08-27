@@ -4,6 +4,8 @@ MAX_STRING_LENGTH = 1024
 
 
 #a chave representa o caractere que vem depois da barra invertida e o valor é o caractere que vai ser inserido na string final
+#A ideia é que vamos chamar os scapes depois de vermos uma barra invertida, 
+#então vamos olhar para o próximo caractere e ver se ele é um dos casos especiais que a gente quer tratar
 ESCAPES = {
     "n": "\n",
     "t": "\t",
@@ -11,7 +13,7 @@ ESCAPES = {
     "f": "\f",
     '"': '"',
     "\\": "\\", #duas barras representam uma barra invertida literal, a primeira barra é o escape da segunda
-    #por exemplo, se tentarmos printar ("\") em dará erro. Para efetivamente exibir a barra, precisamos colocar \\
+    #por exemplo, se tentarmos printar ("\") dará erro. Para efetivamente exibir a barra, precisamos colocar \\
 }
 
 

@@ -86,6 +86,10 @@ TOKEN_SPECS = [
     ("MISMATCH",             r"."),
 ]
 
+
+#faz o casamento de todos os regex de Token_Specs
+#a ideia é que quando a gente passe os tokens recebidos, a gente consiga identificar qual regex casou com o texto, 
+# e assim saber qual é o tipo do token
 MASTER_PATTERN = re.compile(
     "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPECS)
 )

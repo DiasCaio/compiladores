@@ -29,7 +29,7 @@ def tokenize(source: str):
         text = m.group() #Texto que casou com a regra (exemplo: "+", "foo" etc.)
 
         if kind in ("WHITESPACE", "LINE_COMMENT"):
-            pos = m.end()
+            pos = m.end() #devolve o índice após o texto examinado
             continue
 
         if kind == "NEWLINE":
@@ -49,6 +49,7 @@ def tokenize(source: str):
             continue
 
         if kind == "COMMENT_OPEN":
+            #importante entender que, normalmente, aqui o token viria como none (não processamos o comentário)
             token, pos, line = scan_comment(source, m.end(), line)
             if token is not None:
                 tokens.append(token)
@@ -57,7 +58,7 @@ def tokenize(source: str):
         if kind == "IDENTIFIER":
             token_type = classify_identifier(text)
             if token_type == TokenType.BOOL_CONST:
-                value = text.lower() == "true"
+                value = text.lower() == "true" #note que usamos == para comparar, não atribuir
             else:
                 value = None
             tokens.append(Token(token_type, text, line, value))
