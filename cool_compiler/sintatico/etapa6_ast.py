@@ -12,17 +12,7 @@ from typing import Optional
 # --------------------------------------------------------------------------
 # 1. Classes base
 # --------------------------------------------------------------------------
-# Repare que as classes base estão vazias, e isso é de propósito.
-#
-# Se colocássemos aqui só o atributo "line", ele não viraria um campo de
-# verdade: um campo de dataclass só existe em classes decoradas com
-# @dataclass, e Node, Expr e Feature não são. O atributo ficaria solto, sem
-# fazer parte da construção do nó.
-#
-# E se decorássemos essas bases com @dataclass para "line" ser reconhecido,
-# ele passaria a ser herdado como o PRIMEIRO parâmetro de todo nó que viesse
-# depois — ficaria BinaryOp(12, "+", esq, dir), com a linha na frente do que
-# interessa, em vez de podermos deixá-la por último como fazemos abaixo.
+
 
 
 #Node e Expr para tudo o que produz valor
@@ -137,7 +127,7 @@ class Dispatch(Expr):
     afirmaria que o programador escreveu um self que ele não escreveu.
     Guardar None preserva o que estava no código; a fase semântica resolve.
     """
-    
+
     target: Optional[Expr]
     method: str
     args: list[Expr]

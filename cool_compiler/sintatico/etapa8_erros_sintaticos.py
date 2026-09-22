@@ -97,6 +97,6 @@ SYNC_EXPR = {
     TokenType.EOF,
 }
 
-# Teto de mensagens exibidas. Passando disso, a saída deixou de ajudar: quase
+# Teto de mensagens exibidas. Passando disso quase
 # certamente o arquivo tem um problema estrutural lá no começo.
 MAX_ERROS_EXIBIDOS = 20
