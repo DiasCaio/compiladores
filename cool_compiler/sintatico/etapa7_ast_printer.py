@@ -65,6 +65,8 @@ CONECTORES_ASCII = {
 # 2. API pública
 # --------------------------------------------------------------------------
 
+
+
 def format_ast(no: Node, ascii_only: bool = False) -> str:
     """Devolve a árvore desenhada como uma string única.
 
@@ -76,6 +78,7 @@ def format_ast(no: Node, ascii_only: bool = False) -> str:
     # A raiz não tem conector nem prefixo: ela é a única linha na coluna zero.
     _desenhar(no, prefixo="", conector="", rotulo=None,
               conectores=conectores, linhas=linhas)
+    #Apenas printa o resultado da função format_ast
     return "\n".join(linhas)
 
 
@@ -257,45 +260,3 @@ def _filhos(no: Node) -> list[tuple[str | None, Node]]:
             return [("esquerda", left), ("direita", right)]
     # Literais, ObjectId, New, Formal e ErrorExpr são folhas.
     return []
-
-
-# --------------------------------------------------------------------------
-# 6. Teste manual: monta uma AST na mão e desenha
-# --------------------------------------------------------------------------
-# Útil para conferir o formato do desenho ANTES de existir um parser: se a
-# árvore sai torta aqui, o problema é do printer, não do parser.
-
-if __name__ == "__main__":
-    configurar_saida_utf8()
-
-    # Equivalente a:  class Main { main() : Object { 1 + 2 * 3 } };
-    arvore = Program(
-        [
-            ClassDef(
-                "Main",
-                None,
-                [
-                    Method(
-                        "main",
-                        [],
-                        "Object",
-                        BinaryOp(
-                            "+",
-                            IntConst(1, 2),
-                            BinaryOp("*", IntConst(2, 2), IntConst(3, 2), 2),
-                            2,
-                        ),
-                        2,
-                    )
-                ],
-                1,
-            )
-        ],
-        1,
-    )
-
-    print("--- box-drawing (padrao) ---")
-    print_ast(arvore)
-    print()
-    print("--- ascii (--ascii) ---")
-    print_ast(arvore, ascii_only=True)

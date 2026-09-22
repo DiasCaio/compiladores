@@ -56,23 +56,15 @@ class ExpressionParser(Cursor):
     # ----------------------------------------------------------------------
 
     def parse_expression(self) -> Expr:
-        """expr ::= OBJECTID '<-' expr | <nivel do not>
-
-        Este é o ponto de entrada de toda expressão, e é deliberadamente
-        GULOSO: chamado de dentro de um let, de um if ou de um argumento, ele
-        consome tudo que conseguir. Essa gula é o que implementa a regra do
-        let (ver parse_let).
         """
-        # ÚNICO lugar da gramática que precisa de lookahead de 2. Ao ver um
-        # OBJECTID ainda não dá para saber se é `x <- 1` (atribuição) ou `x`
-        # (uma variável, talvez seguida de `.f()`). E aqui a decisão precisa
-        # vir ANTES do consumo: se não for atribuição, o OBJECTID tem que
-        # continuar disponível para parse_primary lá embaixo.
+        expr ::= OBJECTID '<-' expr | <nivel do not>
+        """
+
+        #Checa se a palavra atual é um nome e a próxima é um assign. Se for, monta o assign
+        #do contrário, repassa para o próximo nível da cascata, que é o parse_not
         if self.check(TokenType.OBJECTID) and self.check_ahead(1, TokenType.ASSIGN):
             nome = self.advance()                 # OBJECTID
             self.advance()                        # <-
-            # Recursão à DIREITA: x <- y <- 1 vira x <- (y <- 1), que é o que
-            # a associatividade à direita significa.
             return Assign(nome.lexeme, self.parse_expression(), nome.line)
         return self.parse_not()
 
@@ -107,10 +99,13 @@ class ExpressionParser(Cursor):
         """
         esquerda = self.parse_unary()
 
+
+        # exemplo: 1 * 2 + 1
+
         while True:
             info = BINARY_OPERATORS.get(self.peek().type)
-            # Ou não é operador binário, ou liga mais fraco do que este nível
-            # aceita: em ambos os casos, quem chamou é que resolve.
+            #Essa é uma chamada recursiva que vai descendo a cascata de precedência. 
+            # Se o operador atual for mais fraco que o piso, devolve a expressão da esquerda
             if info is None or info.precedence < min_precedence:
                 return esquerda
 

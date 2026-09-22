@@ -30,7 +30,8 @@ class Cursor:
         # Erros acumulados: o parser nunca aborta, então esta lista é o
         # relatório final.
         self.errors: list[ParseError] = []
-        # Enquanto True, erros novos são engolidos (ver o método error).
+        # Variável que indica que um erro foi encontrado, precisamos achar um ponto de sincronização 
+        # antes de reportar outro erro
         self.panicking = False
 
     # ---- Leitura sem consumir ------------------------------------------
@@ -71,11 +72,7 @@ class Cursor:
     def advance(self) -> Token:
         """Consome o token atual e o devolve.
 
-        Tokens ERROR do lexer são pulados aqui como defesa em profundidade.
-        Normalmente eles já foram filtrados por parse() (etapa 12) e nunca
-        chegam até aqui; mas se alguém construir um Parser direto sobre a saída
-        crua de tokenize(), o comportamento continua sensato em vez de gerar
-        uma cascata de erros sintáticos sem sentido.
+        Se batermos com um erro, o parser não levanta exceção, só continua olhando para frente
         """
         while (self.pos < len(self.tokens) - 1
                and self.tokens[self.pos].type is TokenType.ERROR):
@@ -119,12 +116,10 @@ class Cursor:
         Quem chama decide se levanta (`raise self.error(...)`, para desempilhar
         até a fronteira de recuperação) ou se só registra e segue (quando dá
         para continuar de onde está).
-
-        A supressão por pânico é o que separa uma saída legível de quarenta
-        mensagens inúteis: depois do primeiro erro, tudo que vem até a próxima
-        sincronização é quase sempre cascata do mesmo problema.
         """
         erro = ParseError(token, message, self.filename)
+        #A ideia de panicking é que, se já reportamos um erro, não queremos reportar outro 
+        # até que o parser tenha se recuperado
         if not self.panicking:
             self.errors.append(erro)
             self.panicking = True
@@ -146,31 +141,3 @@ class Cursor:
         self.panicking = False
         while not self.at_end() and self.peek().type not in conjunto:
             self.advance()
-
-
-# --------------------------------------------------------------------------
-# Teste manual do cursor, antes de existir qualquer regra da gramática
-# --------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    from ..lexico.etapa5_lexer import tokenize
-
-    cursor = Cursor(tokenize("class Main { }"), "exemplo.cl")
-
-    print("Tokens consumidos um a um:")
-    while not cursor.at_end():
-        print(f"  {cursor.advance()}")
-
-    print()
-    print("Lookahead sobre uma atribuicao (x <- 1):")
-    outro = Cursor(tokenize("x <- 1"), "exemplo.cl")
-    print(f"  atual e OBJECTID?      {outro.check(TokenType.OBJECTID)}")
-    print(f"  o proximo e ASSIGN?    {outro.check_ahead(1, TokenType.ASSIGN)}")
-
-    print()
-    print("Um expect que falha:")
-    try:
-        outro.expect(TokenType.CLASS, "esperava a palavra-chave 'class'")
-    except ParseError as erro:
-        print(f"  {erro}")
-    print(f"  erros acumulados: {len(outro.errors)}")

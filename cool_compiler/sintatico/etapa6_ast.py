@@ -1,8 +1,8 @@
 """
 Arquivo que define a árvore da linguagem. Aqui temos a definição de todos os tipos de nós 
 que o parser pode produzir, ou seja, a estrutura de dados que representa o programa COOL na 
-memória. Cada nó é uma instância de uma classe, e cada classe corresponde a um tipo de 
-construção da linguagem (como classes, métodos, expressões, etc.).
+memória. É como se fossem o arquivo de tokens da etapa léxica, mas para a etapa sintática.
+Lá era o vocabulário de palavras da linguagem, aqui o vocabulário de estruturas da linguagem.
 """
 
 from dataclasses import dataclass
@@ -24,6 +24,8 @@ from typing import Optional
 # depois — ficaria BinaryOp(12, "+", esq, dir), com a linha na frente do que
 # interessa, em vez de podermos deixá-la por último como fazemos abaixo.
 
+
+#Node e Expr para tudo o que produz valor
 class Node:
     """Base de todo nó da árvore."""
 
@@ -35,7 +37,7 @@ class Expr(Node):
     linguagens seriam comandos). Por isso Expr cobre tanta coisa aqui.
     """
 
-
+#Feature para tudo que é membro de classe (método ou atributo)
 class Feature(Node):
     """Base dos membros de uma classe: um método ou um atributo."""
 
@@ -47,8 +49,8 @@ class Feature(Node):
 @dataclass(frozen=True)
 class Program(Node):
     """A raiz da árvore: um programa COOL é uma lista de classes."""
-
-    classes: list["ClassDef"]
+    #ClassDef entre aspas porque a classe ainda não foi definida, mas o Python precisa saber que é uma referência a ela
+    classes: list["ClassDef"] 
     line: int
 
 
@@ -135,7 +137,7 @@ class Dispatch(Expr):
     afirmaria que o programador escreveu um self que ele não escreveu.
     Guardar None preserva o que estava no código; a fase semântica resolve.
     """
-
+    
     target: Optional[Expr]
     method: str
     args: list[Expr]
