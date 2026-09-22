@@ -32,7 +32,7 @@ class ParseError(Exception):
     quem chama não deveria precisar saber montar a mensagem.
     """
 
-    def __init__(self, token: Token, message: str, filename: str = "<entrada>"):
+    def __init__(self, token: Token, message: str, filename: str):
         self.token = token
         self.message = message
         self.filename = filename
