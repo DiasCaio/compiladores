@@ -1,6 +1,6 @@
 import re
 
-from etapa1_tokens import TokenType
+from .etapa1_tokens import TokenType
 
 # --------------------------------------------------------------------------
 # 1. Tabela de palavras-chave "normais" (case-insensitive).

@@ -1,12 +1,14 @@
-import sys
-from pathlib import Path
+"""Laco principal do lexer: transforma o codigo-fonte na lista de Tokens.
 
-from etapa1_tokens import Token, TokenType
-from etapa2_lexer_rules import MASTER_PATTERN, classify_identifier
-from etapa3_string_scanner import scan_string
-from etapa4_comment_scanner import scan_comment
+Este modulo e biblioteca pura. A camada de linha de comando (menu de
+examples/ e impressao dos tokens) vive em cool_compiler/main.py, para que
+as duas fases do compilador compartilhem o mesmo ponto de entrada.
+"""
 
-EXAMPLES_DIR = Path(__file__).parent / "examples"
+from .etapa1_tokens import Token, TokenType
+from .etapa2_lexer_rules import MASTER_PATTERN, classify_identifier
+from .etapa3_string_scanner import scan_string
+from .etapa4_comment_scanner import scan_comment
 
 
 def tokenize(source: str):
@@ -83,32 +85,3 @@ def tokenize(source: str):
 
     tokens.append(Token(TokenType.EOF, "", line))
     return tokens
-
-
-def escolher_arquivo_exemplo() -> Path:
-    """Lista os arquivos .cl da pasta examples/ e deixa o usuário
-    escolher um deles digitando o número correspondente.
-    """
-    arquivos = sorted(EXAMPLES_DIR.glob("*.cl"))
-    if not arquivos:
-        print(f"Nenhum arquivo .cl encontrado em {EXAMPLES_DIR}")
-        sys.exit(1)
-
-    print("Arquivos disponíveis em examples/:")
-    for indice, caminho in enumerate(arquivos, start=1):
-        print(f"  {indice}. {caminho.name}")
-
-    escolha = input("Digite o número do arquivo: ")
-    return arquivos[int(escolha) - 1]
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        caminho = Path(sys.argv[1])
-    else:
-        caminho = escolher_arquivo_exemplo()
-
-    codigo = caminho.read_text(encoding="utf-8")
-
-    for token in tokenize(codigo):
-        print(token)

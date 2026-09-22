@@ -1,4 +1,4 @@
-from etapa1_tokens import Token, TokenType
+from .etapa1_tokens import Token, TokenType
 
 
 def scan_comment(source: str, start: int, line: int):

@@ -1,4 +1,4 @@
-from etapa1_tokens import Token, TokenType
+from .etapa1_tokens import Token, TokenType
 
 MAX_STRING_LENGTH = 1024
 
@@ -14,7 +14,7 @@ ESCAPES = {
     '"': '"',
     "\\": "\\", #duas barras representam uma barra invertida literal, a primeira barra é o escape da segunda
     #por exemplo, se tentarmos printar ("\") dará erro. Para efetivamente exibir a barra, precisamos colocar \\
-}
+} 
 
 
 def scan_string(source: str, start: int, line: int):

@@ -1,0 +1,41 @@
+{
+  // Configurações de "Run and Debug" para o compilador.
+  //
+  // main.py usa imports relativos (from .lexico import ...), então ele só
+  // roda como MÓDULO do pacote (`python -m cool_compiler.main`), nunca como
+  // arquivo isolado. Por isso o botão de play do canto do editor não
+  // funciona aqui: use a aba "Run and Debug" (Ctrl+Shift+D) e escolha uma
+  // das opções abaixo, ou aperte F5 com esta janela em foco.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "COOL: menu interativo",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "cool_compiler.main",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "COOL: analisar o arquivo .cl aberto no editor",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "cool_compiler.main",
+      "args": ["${file}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "COOL: arquivo aberto, tokens e AST (--fase ambas)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "cool_compiler.main",
+      "args": ["--fase", "ambas", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
