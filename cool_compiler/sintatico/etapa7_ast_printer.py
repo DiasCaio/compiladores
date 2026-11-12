@@ -24,6 +24,16 @@ O módulo é dividido em três partes que não se misturam:
 
 Separar assim significa que acrescentar um nó novo à AST custa duas entradas de
 `match`, e nunca mexer no desenho.
+
+Depois da fase semântica, a mesma árvore pode sair ANOTADA, com o tipo de cada
+expressão no fim da linha:
+
+    BinaryOp + (linha 4) [tipo: Int]
+    ├── esquerda: IntConst 1 (linha 4) [tipo: Int]
+    └── direita: IntConst 2 (linha 4) [tipo: Int]
+
+Os tipos chegam prontos num dicionário (ver `tipos` em format_ast); o desenho
+só os copia para a linha certa, continuando sem saber nada sobre COOL.
 """
 
 import sys
@@ -67,23 +77,29 @@ CONECTORES_ASCII = {
 
 
 
-def format_ast(no: Node, ascii_only: bool = False) -> str:
+def format_ast(no: Node, ascii_only: bool = False,
+               tipos: dict[int, str] | None = None) -> str:
     """Devolve a árvore desenhada como uma string única.
 
     Devolver string em vez de imprimir direto deixa a função testável e
     componível: dá para comparar com um esperado, ou embutir num relatório.
+
+    `tipos` é opcional e vem da fase semântica (etapa 20): o tipo de cada
+    expressão, indexado pelo id do nó. Sem ele, a árvore sai exatamente como
+    na fase sintática.
     """
     conectores = CONECTORES_ASCII if ascii_only else CONECTORES_UNICODE
     linhas: list[str] = []
     # A raiz não tem conector nem prefixo: ela é a única linha na coluna zero.
     _desenhar(no, prefixo="", conector="", rotulo=None,
-              conectores=conectores, linhas=linhas)
+              conectores=conectores, linhas=linhas, tipos=tipos)
     #Apenas printa o resultado da função format_ast
     return "\n".join(linhas)
 
 
-def print_ast(no: Node, ascii_only: bool = False) -> None:
-    print(format_ast(no, ascii_only))
+def print_ast(no: Node, ascii_only: bool = False,
+              tipos: dict[int, str] | None = None) -> None:
+    print(format_ast(no, ascii_only, tipos))
 
 
 def configurar_saida_utf8() -> None:
@@ -106,7 +122,8 @@ def configurar_saida_utf8() -> None:
 # --------------------------------------------------------------------------
 
 def _desenhar(no: Node, prefixo: str, conector: str, rotulo: str | None,
-              conectores: dict[str, str], linhas: list[str]) -> None:
+              conectores: dict[str, str], linhas: list[str],
+              tipos: dict[int, str] | None) -> None:
     """Escreve a linha de `no` e desce recursivamente nos filhos.
 
     `prefixo` é a coluna de troncos herdada dos ancestrais, e `rotulo` nomeia o
@@ -115,7 +132,12 @@ def _desenhar(no: Node, prefixo: str, conector: str, rotulo: str | None,
     uma linha só para o rótulo seria ruído.
     """
     cabeca = f"{rotulo}: " if rotulo else ""
-    linhas.append(prefixo + conector + cabeca + _rotular(no))
+    # Só as expressões têm tipo anotado. Classes, métodos e atributos não
+    # aparecem no dicionário e saem sem anotação.
+    anotacao = ""
+    if tipos is not None and id(no) in tipos:
+        anotacao = f" [tipo: {tipos[id(no)]}]"
+    linhas.append(prefixo + conector + cabeca + _rotular(no) + anotacao)
 
     filhos = _filhos(no)
     # Prefixo dos filhos: o que já vinha, mais a coluna deste nível. Sob o
@@ -134,6 +156,7 @@ def _desenhar(no: Node, prefixo: str, conector: str, rotulo: str | None,
             rotulo_filho,
             conectores,
             linhas,
+            tipos,
         )
 
 

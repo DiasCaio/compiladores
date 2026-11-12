@@ -7,12 +7,13 @@ bibliotecas puras. Antes da reorganização em pacotes, este papel era do bloco
 
 Uso, sempre a partir da raiz do repositório:
 
-    python -m cool_compiler.main                          menu de examples/
-    python -m cool_compiler.main arquivo.cl               imprime a AST
-    python -m cool_compiler.main --fase lexico arquivo.cl imprime os tokens
-    python -m cool_compiler.main --fase ambas  arquivo.cl as duas coisas
-    python -m cool_compiler.main --expr "1 + 2 * 3"       expressao solta
-    python -m cool_compiler.main --ascii arquivo.cl       arvore sem Unicode
+    python -m cool_compiler.main                             menu de examples/
+    python -m cool_compiler.main arquivo.cl                  AST com os tipos
+    python -m cool_compiler.main --fase sintatico arquivo.cl AST sem os tipos
+    python -m cool_compiler.main --fase lexico arquivo.cl    imprime os tokens
+    python -m cool_compiler.main --fase ambas  arquivo.cl    tokens e AST
+    python -m cool_compiler.main --expr "1 + 2 * 3"          expressao solta
+    python -m cool_compiler.main --ascii arquivo.cl          arvore sem Unicode
 
 Também dá para clicar direto no botão de "play" do editor (Run Python File),
 sem usar -m. O bloco logo abaixo é o que torna isso possível: veja o
@@ -41,6 +42,7 @@ if __package__ in (None, ""):
     __package__ = "cool_compiler"
 
 from .lexico.etapa5_lexer import tokenize
+from .semantico.etapa20_verificador import analyze
 from .sintatico.etapa7_ast_printer import configurar_saida_utf8, format_ast
 from .sintatico.etapa8_erros_sintaticos import MAX_ERROS_EXIBIDOS
 from .sintatico.etapa12_parser import ParseResult, parse, parse_expression
@@ -94,7 +96,7 @@ def resolver_caminho(texto: str) -> Path:
 
 
 # --------------------------------------------------------------------------
-# 2. As duas fases
+# 2. As fases
 # --------------------------------------------------------------------------
 
 def executar_lexico(codigo: str) -> int:
@@ -102,6 +104,21 @@ def executar_lexico(codigo: str) -> int:
     for token in tokenize(codigo):
         print(token)
     return 0
+
+
+def listar_erros(erros: list, descricao: str) -> None:
+    """Imprime o total e as primeiras mensagens de uma lista de erros.
+
+    Compartilhada pelas fases sintática e semântica: o teto
+    MAX_ERROS_EXIBIDOS vale para as duas, pelo mesmo motivo.
+    """
+    print()
+    total = len(erros)
+    print(f"{total} erro(s) {descricao}:")
+    for erro in erros[:MAX_ERROS_EXIBIDOS]:
+        print(f"  {erro}")
+    if total > MAX_ERROS_EXIBIDOS:
+        print(f"  ... e mais {total - MAX_ERROS_EXIBIDOS}")
 
 
 def relatar(resultado: ParseResult, nome: str, ascii_only: bool) -> int:
@@ -122,15 +139,34 @@ def relatar(resultado: ParseResult, nome: str, ascii_only: bool) -> int:
         print(format_ast(resultado.program, ascii_only))
 
     if resultado.syntax_errors:
-        print()
-        total = len(resultado.syntax_errors)
-        print(f"{total} erro(s) sintatico(s):")
-        for erro in resultado.syntax_errors[:MAX_ERROS_EXIBIDOS]:
-            print(f"  {erro}")
-        if total > MAX_ERROS_EXIBIDOS:
-            print(f"  ... e mais {total - MAX_ERROS_EXIBIDOS}")
+        listar_erros(resultado.syntax_errors, "sintatico(s)")
 
     return 1 if resultado.has_errors else 0
+
+
+def executar_semantico(resultado: ParseResult, nome: str, ascii_only: bool) -> int:
+    """Roda a fase semântica sobre a árvore do parser e imprime a árvore com tipos.
+
+    A fase semântica só roda sobre uma árvore SEM erros. A política de nunca
+    abortar vale DENTRO de cada fase; entre uma fase e outra, rodar a semântica
+    sobre uma árvore com buracos (ErrorExpr, features descartadas) geraria
+    erros falsos, como "variavel nao declarada" para uma declaração que o
+    parser teve que jogar fora. Nesse caso mostramos o relatório sintático e
+    explicamos por que a fase seguinte não rodou.
+    """
+    if resultado.has_errors:
+        codigo_saida = relatar(resultado, nome, ascii_only)
+        print()
+        print("A analise semantica nao foi executada: ela precisa de uma arvore sem erros.")
+        return codigo_saida
+
+    semantico = analyze(resultado.program, nome)
+    print(format_ast(resultado.program, ascii_only, semantico.types))
+
+    if semantico.errors:
+        listar_erros(semantico.errors, "semantico(s)")
+
+    return 1 if semantico.has_errors else 0
 
 
 # --------------------------------------------------------------------------
@@ -140,23 +176,27 @@ def relatar(resultado: ParseResult, nome: str, ascii_only: bool) -> int:
 def construir_parser_de_argumentos() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m cool_compiler.main",
-        description="Compilador didático de COOL: análise léxica e sintática.",
+        description="Compilador didático de COOL: análise léxica, sintática e semântica.",
     )
     parser.add_argument(
         "arquivo",
         nargs="?",
         help="programa .cl a analisar; sem ele, abre o menu de examples/",
     )
+    # O padrão é a fase mais avançada que existe: cada fase já roda as
+    # anteriores, então "semantico" mostra tudo o que o compilador sabe fazer.
+    # "ambas" continua significando léxico + sintático, como antes.
     parser.add_argument(
         "--fase",
-        choices=("lexico", "sintatico", "ambas"),
-        default="sintatico",
-        help="qual fase executar (padrão: sintatico)",
+        choices=("lexico", "sintatico", "semantico", "ambas"),
+        default="semantico",
+        help="qual fase executar (padrão: semantico; 'ambas' = tokens e AST)",
     )
     parser.add_argument(
         "--expr",
         metavar="EXPRESSAO",
-        help="analisa uma expressão solta em vez de um arquivo",
+        help="analisa uma expressão solta em vez de um arquivo (só até a fase "
+             "sintática: fora de uma classe não há contexto para os tipos)",
     )
     parser.add_argument(
         "--ascii",
@@ -194,7 +234,12 @@ def main() -> None:
         print()
         print("=== AST ===")
 
-    sys.exit(relatar(parse(codigo, caminho.name), caminho.name, argumentos.ascii))
+    resultado = parse(codigo, caminho.name)
+
+    if argumentos.fase == "semantico":
+        sys.exit(executar_semantico(resultado, caminho.name, argumentos.ascii))
+
+    sys.exit(relatar(resultado, caminho.name, argumentos.ascii))
 
 
 if __name__ == "__main__":

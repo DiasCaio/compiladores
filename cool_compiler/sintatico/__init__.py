@@ -107,7 +107,7 @@ LIMITAÇÕES CONHECIDAS
     shift). É consequência de `not` ficar acima das comparações na cascata.
     Fica documentado em vez de contornado: contorná-lo embaralharia a
     precedência do `not`, que é o que a cascata existe para deixar explícita.
-  - Não há verificação de tipos, de escopo nem de herança: isso é a fase
-    semântica, que ainda não existe. Um arquivo pode passar por aqui sem erro
-    e ainda assim não ser um programa COOL válido.
+  - Não há verificação de tipos, de escopo nem de herança: isso é trabalho da
+    fase semântica (pacote semantico/, etapas 13 a 20). Um arquivo pode passar
+    por aqui sem erro e ainda assim não ser um programa COOL válido.
 """

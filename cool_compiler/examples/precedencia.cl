@@ -1,9 +1,9 @@
 -- Exercita a tabela de precedencia e a associatividade dos operadores.
 --
 -- Este arquivo testa o FORMATO da arvore, nao os tipos: a verificacao de tipos
--- e assunto da fase semantica, que ainda nao existe. Para conferir, olhe quem
--- ficou MAIS FUNDO no desenho: quem esta mais fundo foi agrupado primeiro, ou
--- seja, liga mais forte.
+-- e assunto da fase semantica (veja verificacao_de_tipos.cl). Para conferir,
+-- olhe quem ficou MAIS FUNDO no desenho: quem esta mais fundo foi agrupado
+-- primeiro, ou seja, liga mais forte.
 
 class Precedencia inherits IO {
 
@@ -43,4 +43,10 @@ class Precedencia inherits IO {
 
     -- @ escolhe a versao de um ancestral ->  (self@Precedencia).aritmetica()
     dispatch_estatico() : Int { self@Precedencia.aritmetica() };
+};
+
+-- Todo programa COOL precisa de uma classe Main com um metodo main(): e por
+-- ali que a execucao comeca, e a fase semantica reclama se ela faltar.
+class Main inherits IO {
+    main() : Object { out_int((new Precedencia).aritmetica()) };
 };

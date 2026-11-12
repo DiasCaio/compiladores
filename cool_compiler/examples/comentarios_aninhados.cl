@@ -16,3 +16,9 @@ class ComentariosAninhados {
 
     y : Int <- 2;
 };
+
+-- Todo programa COOL precisa de uma classe Main com um metodo main(): e por
+-- ali que a execucao comeca, e a fase semantica reclama se ela faltar.
+class Main {
+    main() : Object { new ComentariosAninhados };
+};
