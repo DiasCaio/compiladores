@@ -30,9 +30,10 @@ class TypeChecker(ExpressionChecker):
     # ----------------------------------------------------------------------
 
     def check_class(self, info: ClassInfo) -> None:
+        #determina a classe atual, para que o SELF_TYPE referencie sempre à ela
         self.classe_atual = info.name              # todo SELF_TYPE agora é desta classe
 
-        with self.escopos.scope():                 # escopo da classe
+        with self.escopos.scope():                 # Abre o escopo da classe, para que os atributos fiquem visíveis no corpo dos métodos
             for nome, tipo in self.ambiente.all_attributes(info.name).items():
                 self.escopos.define(nome, tipo)    # atributos próprios e herdados
 
@@ -49,9 +50,9 @@ class TypeChecker(ExpressionChecker):
 
     def check_attribute(self, atributo: Attribute) -> None:
         if atributo.init is None or atributo.name == SELF:
-            return                                 # nada a verificar
+            return                                 # nada a verificar se o atributo não tem inicialização, ou se é self (já reportado na etapa 17)
 
-        tipo_declarado = self.ambiente.type_or_error(atributo.type_name,
+        tipo_declarado = self.ambiente.type_or_error(atributo.type_name, #busca o tipo declarado do atributo, que já foi verificado na etapa 17
                                                      allow_self_type=True)
         self._exigir_compativel(                   # a inicialização serve no tipo declarado?
             self.check(atributo.init), tipo_declarado, atributo.line,
@@ -64,7 +65,7 @@ class TypeChecker(ExpressionChecker):
                                               allow_self_type=True)
 
         with self.escopos.scope():                 # escopo do método, acima do da classe
-            for formal in metodo.formals:
+            for formal in metodo.formals:           #Declara os parâmetros do método no escopo, para que fiquem visíveis no corpo do método
                 if formal.name != SELF:
                     tipo = self.ambiente.type_or_error(formal.type_name,
                                                        allow_self_type=False)
