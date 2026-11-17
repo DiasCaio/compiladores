@@ -18,7 +18,7 @@ class FeatureTable(TypeSystem):
     def __init__(self, programa: Program, relator: ErrorReporter):
         super().__init__(programa, relator)        # passada 1 (etapas 15 e 16)
 
-        for info in self.inheritance_order():      # passada 2: pais antes dos filhos
+        for info in self.inheritance_order():      # passada 2: pais antes dos filhos. A ideia é ver se o filho está sobrescrevendo algo
             if info.node is not None:              # básicas já vêm prontas da etapa 14
                 self._coletar_features(info)
 
@@ -37,7 +37,7 @@ class FeatureTable(TypeSystem):
                     self._coletar_metodo(info, feature)
 
     def _coletar_atributo(self, info: ClassInfo, atributo: Attribute) -> None:
-        tipo = self.check_declared_type(           # o tipo existe?
+        tipo = self.check_declared_type(           # o do atributo tipo existe?
             atributo.type_name, atributo.line, allow_self_type=True,
             descricao=f"do atributo '{atributo.name}'",
         )
@@ -47,7 +47,7 @@ class FeatureTable(TypeSystem):
                                 "'self' nao pode ser o nome de um atributo")
             return
 
-        if atributo.name in info.attributes:       # repetido na mesma classe
+        if atributo.name in info.attributes:       # atributo repetido na mesma classe
             self.relator.report(
                 atributo.line,
                 f"o atributo '{atributo.name}' foi definido mais de uma vez "
@@ -70,8 +70,8 @@ class FeatureTable(TypeSystem):
         # 1) Monta a assinatura, validando cada parâmetro
         parametros: list[tuple[str, str]] = []
         vistos: set[str] = set()
-        for formal in metodo.formals:
-            if formal.name == SELF:
+        for formal in metodo.formals: #percorre todos os parâmetros do método
+            if formal.name == SELF: #Self não pode ser parâmetro
                 self.relator.report(formal.line,
                                     "'self' nao pode ser o nome de um parametro")
             elif formal.name in vistos:            # parâmetro repetido
@@ -82,22 +82,22 @@ class FeatureTable(TypeSystem):
                 )
             vistos.add(formal.name)
 
-            tipo = self.check_declared_type(           # parâmetro NÃO pode ser SELF_TYPE
+            tipo = self.check_declared_type(           # checagem do tipo do parâmetro
                 formal.type_name, formal.line, allow_self_type=False,
                 descricao=f"do parametro '{formal.name}'",
             )
             parametros.append((formal.name, tipo))
 
-        retorno = self.check_declared_type(            # retorno PODE ser SELF_TYPE
+        retorno = self.check_declared_type(            # Checagem do tipo do retorno do método
             metodo.return_type, metodo.line, allow_self_type=True,
             descricao=f"de retorno do metodo '{metodo.name}'",
         )
 
-        assinatura = MethodSignature(metodo.name, parametros, retorno,
+        assinatura = MethodSignature(metodo.name, parametros, retorno, #monta a assinatura do método
                                      defined_in=info.name, line=metodo.line)
 
         # 2) Decide se o método entra na tabela
-        if metodo.name in info.methods:            # repetido na mesma classe: recusa
+        if metodo.name in info.methods:            # método repetido na mesma classe: recusa
             anterior = info.methods[metodo.name]
             self.relator.report(
                 metodo.line,
@@ -106,7 +106,7 @@ class FeatureTable(TypeSystem):
             )
             return
 
-        herdado = self.lookup_method(info.parent, metodo.name)
+        herdado = self.lookup_method(info.parent, metodo.name) #existe um método com o mesmo nome em uma classe ancestral? Se sim, confere se a assinatura é compatível
         if herdado is not None:                    # é sobrescrita: confere a assinatura
             self._checar_sobrescrita(assinatura, herdado)
 
@@ -158,6 +158,8 @@ class FeatureTable(TypeSystem):
     # ----------------------------------------------------------------------
     # 2. Consultas (sobem a herança: a classe tem o que declara + o que herdou)
     # ----------------------------------------------------------------------
+
+    #As funções de consulta buscam na classe ou em seus ancestrais, de baixo para cima, o que se deseja. Se não encontrar, retorna None ou vazio.
 
     def lookup_method(self, classe: str, nome: str) -> Optional[MethodSignature]:
         """Assinatura de `nome` vista por `classe`, ou None."""

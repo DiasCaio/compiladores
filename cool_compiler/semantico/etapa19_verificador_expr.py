@@ -33,6 +33,8 @@ class ExpressionChecker:
     # 1. Atalhos usados por todas as regras
     # ----------------------------------------------------------------------
 
+    #Atalhos para chamar funções da FeatureTable e do SymbolTable, para não precisar ficar escrevendo self.ambiente ou self.escopos toda hora.
+
     def error(self, linha: int, mensagem: str) -> None:
         self.relator.report(linha, mensagem)
 
@@ -50,7 +52,7 @@ class ExpressionChecker:
                               f"com {com_o_que}")
 
     def _exigir(self, tipo: str, esperado: str, linha: int, o_que: str) -> None:
-        """Erro se `tipo` não for EXATAMENTE `esperado` (para Int e Bool)."""
+        """Erro se `tipo` não for EXATAMENTE `esperado`."""
         if tipo != esperado and tipo != TIPO_ERRO:
             self.error(linha, f"{o_que} precisa ser {esperado}, mas tem tipo {tipo}")
 
@@ -59,22 +61,14 @@ class ExpressionChecker:
     # ----------------------------------------------------------------------
 
     def check(self, expr: Expr) -> str:
-        """Porta de entrada única: calcula o tipo, anota e devolve.
-
-            check(a + b * 2)
-             +-- check(a)          -> Int
-             +-- check(b * 2)
-             |     +-- check(b)    -> Int
-             |     +-- check(2)    -> Int
-             |     regra do *      -> Int
-             regra do +            -> Int
-        """
+        """Recebe um nó de expressão, chama a regra certa e devolve o tipo dessa expressão."""
         tipo = self._aplicar_regra(expr)    # escolhe e aplica a regra do nó
         self.types[id(expr)] = tipo         # anota: vira o [tipo: ...] da árvore
         return tipo
 
     def _aplicar_regra(self, expr: Expr) -> str:
-        match expr:                         # `case X():` = "expr é um X?" (como isinstance)
+        # Verifica qual o tipo do nó da expressão
+        match expr:                         
             case IntConst():
                 return INT
             case StringConst():
@@ -160,10 +154,10 @@ class ExpressionChecker:
     def check_dispatch(self, expr: Dispatch) -> str:
         """alvo.metodo(args), ou metodo(args), que é self.metodo(args)."""
         if expr.target is None:
-            tipo_alvo = SELF_TYPE                  # sem alvo: é self
+            tipo_alvo = SELF_TYPE                  # método sem alvo: é self
         else:
             tipo_alvo = self.check(expr.target)
-        tipos_args = [self.check(arg) for arg in expr.args]
+        tipos_args = [self.check(arg) for arg in expr.args] #calcula o tipo de cada argumento
 
         if tipo_alvo == TIPO_ERRO:
             return TIPO_ERRO                       # alvo já deu erro: nem procura o método

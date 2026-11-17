@@ -33,7 +33,10 @@ class TypeSystem(ClassTable):
     # ----------------------------------------------------------------------
 
     def join(self, a: str, b: str, classe_atual: str) -> str:
-        """O ancestral comum mais próximo de `a` e `b`."""
+        """O ancestral comum mais próximo de `a` e `b`.
+        A ideia é a gente conseguir lidar com condições. Como não conseguimos saber qual ramo da condição vai ser executado, 
+        o tipo do resultado é o ancestral mais próximo dos dois ramos.
+        """
         if a == TIPO_ERRO:
             return b                               # o lado com erro não informa nada
         if b == TIPO_ERRO:

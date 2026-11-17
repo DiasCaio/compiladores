@@ -22,13 +22,14 @@ SELF = "self"            # o objeto executando agora: não pode ser declarado ne
 SELF_TYPE = "SELF_TYPE"
 
 # Coringa de uma expressão que já deu erro: combina com tudo, evita erro em cascata
+# Quando não conseguimos identificar o tipo de algo que causa erro, usamos esse coringa, por exemplo quando vemos uma variável não declarada antes
 TIPO_ERRO = "<erro>"     # os < > garantem que nunca colide com um nome de classe
 
 
 # --------------------------------------------------------------------------
 # 2. As classes básicas
 # --------------------------------------------------------------------------
-# classe: (pai, [(método, [(parâmetro, tipo)], retorno), ...])  -> só assinaturas, sem corpo
+# classe: (pai, [(métodos, [(parâmetro, tipo)], retorno), ...])  -> só assinaturas, sem corpo
 
 CLASSES_BASICAS = {
     OBJECT: (None, [                                             # raiz: sem pai

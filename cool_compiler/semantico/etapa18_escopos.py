@@ -22,16 +22,17 @@ class SymbolTable:
         """`with escopos.scope():` abre um escopo e o fecha ao sair do bloco."""
         self.escopos.append({})         # entra: empilha
         try:
-            yield                       # roda o corpo do `with`
+            yield                       # roda o corpo do `with` das etapas 19 e 20. A ideia é permitir que o with preencha o escopo aberto, 
+            # definindo nomes e procurando nomes
         finally:
-            self.escopos.pop()          # sai: desempilha (mesmo saindo por return)
+            self.escopos.pop()          # sai: desempilha, removendo todos os nomes declarados no escopo que acabou
 
     def define(self, nome: str, tipo: str) -> None:
         """Declara `nome` no topo."""
         self.escopos[-1][nome] = tipo
 
     def lookup(self, nome: str) -> Optional[str]:
-        """Tipo da declaração mais interna de `nome`, ou None."""
+        """Verifica o tipo de `nome` no topo, ou nos escopos mais externos. Retorna None se não achar."""
         for escopo in reversed(self.escopos):   # do topo para o fundo
             if nome in escopo:
                 return escopo[nome]             # 1º achado = o mais interno

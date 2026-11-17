@@ -1,0 +1,25 @@
+# Abre o menu com os arquivos de examples/ (digite o número e tecle Enter)
+python -m cool_compiler.main
+
+
+# ----------------------------------------------------------------------------
+# 2. Fase semântica (o padrão): árvore com [tipo: ...] e erros semânticos
+# ----------------------------------------------------------------------------
+
+# Programa válido que exercita as regras de tipo. Esperado: nenhum erro
+python -m cool_compiler.main cool_compiler/examples/verificacao_de_tipos.cl
+
+# Herança, sobrescrita, SELF_TYPE e os três tipos de dispatch. Esperado: nenhum erro
+# Repare em "Dispatch .batizar [tipo: Filhote]": é o SELF_TYPE em ação
+python -m cool_compiler.main cool_compiler/examples/heranca_e_dispatch.cl
+
+# let e case (escopos e join). Esperado: nenhum erro
+python -m cool_compiler.main cool_compiler/examples/let_e_case.cl
+
+# if, while e blocos. Esperado: nenhum erro
+python -m cool_compiler.main cool_compiler/examples/controle_de_fluxo.cl
+
+# Erros semânticos de propósito. Esperado: 14 erros semânticos, todos de uma vez
+python -m cool_compiler.main cool_compiler/examples/erros_semanticos.cl
+
+
