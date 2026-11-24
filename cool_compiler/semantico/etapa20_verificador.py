@@ -86,10 +86,11 @@ class TypeChecker(ExpressionChecker):
 
 @dataclass
 class SemanticResult:
-    """Saída da fase: os tipos anotados e os erros."""
+    """Saída da fase: os tipos anotados, os erros e o que se sabe das classes."""
 
     types: dict[int, str]          # id do nó -> tipo (o printer escreve [tipo: ...])
     errors: list[SemanticError]
+    ambiente: FeatureTable         # classes, herança, atributos e métodos (usado na geração)
 
     @property
     def has_errors(self) -> bool:
@@ -106,4 +107,4 @@ def analyze(programa: Program, filename: str = "<entrada>") -> SemanticResult:
 
     # Ordena por linha; o erro sem linha (falta Main) vai para o topo
     erros = sorted(relator.errors, key=lambda erro: erro.line or 0)
-    return SemanticResult(verificador.types, erros)
+    return SemanticResult(verificador.types, erros, ambiente)

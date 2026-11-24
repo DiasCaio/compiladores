@@ -1,6 +1,17 @@
 # Abre o menu com os arquivos de examples/ (digite o número e tecle Enter)
 python -m cool_compiler.main
 
+# Demonstração guiada: menu com os exemplos e TODAS as fases, uma por vez,
+# explicadas, terminando com a execução no brili (Enter avança; d pula as pausas)
+python -m cool_compiler.demo
+
+# A demonstração de um arquivo só, sem pausas
+python -m cool_compiler.demo --direto cool_compiler/examples/geracao_case.cl
+
+# A demonstração gravando o programa Bril de cada exemplo em bril_gerado/
+# (nome.json, que o brili lê, e nome.bril, o mesmo programa em texto)
+python -m cool_compiler.demo --salvar
+
 
 # ----------------------------------------------------------------------------
 # 2. Fase semântica (o padrão): árvore com [tipo: ...] e erros semânticos
@@ -21,5 +32,56 @@ python -m cool_compiler.main cool_compiler/examples/controle_de_fluxo.cl
 
 # Erros semânticos de propósito. Esperado: 14 erros semânticos, todos de uma vez
 python -m cool_compiler.main cool_compiler/examples/erros_semanticos.cl
+
+
+# ----------------------------------------------------------------------------
+# 3. Geração de código: COOL -> Bril, executada pelo brili
+# ----------------------------------------------------------------------------
+# Pré-requisitos: brili (deno install -g brili.ts) e, para validar o texto,
+# bril2json (uv tool install . dentro de bril-txt/), ambos no PATH.
+
+# Compila e roda. Esperado: Hello, World.
+python -m cool_compiler.main --fase executar cool_compiler/examples/hello_world.cl
+
+# O programa Bril em texto (formato do bril2txt). Comece lendo @main e @Main.main
+python -m cool_compiler.main --fase bril-texto cool_compiler/examples/hello_world.cl
+
+# O mesmo programa em JSON, o formato que o brili lê (uma instrução por linha)
+python -m cool_compiler.main --fase bril cool_compiler/examples/hello_world.cl
+
+# Salva o JSON e roda o brili à mão: a saída sai como códigos de caractere
+python -m cool_compiler.main --fase bril -o hello.json cool_compiler/examples/hello_world.cl
+brili < hello.json
+
+# A mesma saída crua, sem passar pelo decodificador do executor
+python -m cool_compiler.main --fase executar --bruto cool_compiler/examples/hello_world.cl
+
+# Aritmética, comparações, if, while, let e isvoid. Esperado: geracao_aritmetica.esperado
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_aritmetica.cl
+
+# Objetos, atributos, herança e os três dispatches. Esperado: geracao_objetos.esperado
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_objetos.cl
+
+# Strings: length, concat, substr e '='. Esperado: geracao_strings.esperado
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_strings.cl
+
+# case, boxing de Int/Bool e o ramo mais próximo. Esperado: geracao_case.esperado
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_case.cl
+
+# SELF_TYPE, new SELF_TYPE, copy e type_name. Esperado: geracao_self_type.esperado
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_self_type.cl
+
+# Erro de execução: dispatch em void. Esperado: 1, 2, 3 e o erro na linha 37 (código 2)
+python -m cool_compiler.main --fase executar cool_compiler/examples/geracao_erros_execucao.cl
+
+# Um exemplo para cada erro de execução (divisão por zero, case em void, case
+# sem ramo, substr, abort e heap esgotado) fica em examples/erros_execucao/
+python -m cool_compiler.main --fase executar cool_compiler/examples/erros_execucao/divisao_por_zero.cl
+
+# Programa com erro semântico: a geração não roda. Esperado: os 14 erros e o aviso
+python -m cool_compiler.main --fase executar cool_compiler/examples/erros_semanticos.cl
+
+# Todos os testes da geração: compila, roda e compara com os .esperado
+python -m cool_compiler.testar_geracao
 
 

@@ -51,7 +51,7 @@ class Main inherits IO {
             nao_existe <- 1;
 
             -- ERRO 7: o valor nao combina com o tipo declarado de contador.
-            contador <- "dez";
+            contador2 <- "dez";
 
             -- ERRO 8: a condicao de um if precisa ser Bool.
             if contador then 1 else 2 fi;

@@ -1,0 +1,9 @@
+# Bytecode gerado pelo Python
+__pycache__/
+*.pyc
+
+# JSON gerado à mão com --fase bril -o (ex.: hello.json do comandos_teste.txt)
+hello.json
+
+# Programas Bril gravados pela demonstração (python -m cool_compiler.demo --salvar)
+bril_gerado/

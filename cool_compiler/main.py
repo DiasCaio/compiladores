@@ -15,6 +15,14 @@ Uso, sempre a partir da raiz do repositório:
     python -m cool_compiler.main --expr "1 + 2 * 3"          expressao solta
     python -m cool_compiler.main --ascii arquivo.cl          arvore sem Unicode
 
+Geração de código (alvo: Bril, executada pelo brili):
+
+    python -m cool_compiler.main --fase bril arquivo.cl          programa Bril em JSON
+    python -m cool_compiler.main --fase bril-texto arquivo.cl    o mesmo, em texto
+    python -m cool_compiler.main --fase executar arquivo.cl      compila e roda no brili
+    python -m cool_compiler.main --fase executar --bruto x.cl    saída sem decodificar
+    python -m cool_compiler.main --fase bril -o x.json x.cl      salva o JSON em x.json
+
 Também dá para clicar direto no botão de "play" do editor (Run Python File),
 sem usar -m. O bloco logo abaixo é o que torna isso possível: veja o
 comentário ali para o porquê.
@@ -23,6 +31,7 @@ comentário ali para o porquê.
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Rodando com `python -m cool_compiler.main`, o Python já sabe que este
 # arquivo faz parte do pacote cool_compiler, e os imports relativos abaixo
@@ -41,6 +50,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     __package__ = "cool_compiler"
 
+from .geracao.etapa21_bril import formatar_json, formatar_texto
+from .geracao.etapa27_gerador import generate
+from .geracao.etapa28_executor import BriliNaoEncontrado, executar
 from .lexico.etapa5_lexer import tokenize
 from .semantico.etapa20_verificador import analyze
 from .sintatico.etapa7_ast_printer import configurar_saida_utf8, format_ast
@@ -169,6 +181,78 @@ def executar_semantico(resultado: ParseResult, nome: str, ascii_only: bool) -> i
     return 1 if semantico.has_errors else 0
 
 
+def gerar_bril(resultado: ParseResult, nome: str, ascii_only: bool) -> Optional[dict]:
+    """Roda a semântica e, só se não houver NENHUM erro, a geração de código.
+
+    Mesma política de executar_semantico: a geração confia que cada nome
+    existe e cada tipo foi anotado, então um programa com qualquer erro
+    léxico, sintático ou semântico para aqui, com o relatório da fase que
+    falhou. Os avisos da geração (hoje: uso de entrada) vão para o stderr,
+    para não sujar o JSON que sai no stdout.
+    """
+    nao_executada = "A geracao de codigo nao foi executada: ela precisa de um programa sem erros."
+    if resultado.has_errors:
+        relatar(resultado, nome, ascii_only)
+        print()
+        print(nao_executada)
+        return None
+
+    semantico = analyze(resultado.program, nome)
+    if semantico.errors:
+        listar_erros(semantico.errors, "semantico(s)")
+        print()
+        print(nao_executada)
+        return None
+
+    avisos: list[str] = []
+    programa = generate(resultado.program, semantico, avisos=avisos)
+    for aviso in avisos:
+        print(f"aviso: {nome}: {aviso}", file=sys.stderr)
+    return programa
+
+
+def executar_geracao(resultado: ParseResult, nome: str,
+                     argumentos: argparse.Namespace) -> int:
+    """As três fases de geração: bril (JSON), bril-texto e executar."""
+    programa = gerar_bril(resultado, nome, argumentos.ascii)
+    if programa is None:
+        return 1
+
+    if argumentos.saida is not None:
+        Path(argumentos.saida).write_text(formatar_json(programa) + "\n", encoding="utf-8")
+        print(f"Programa Bril salvo em {argumentos.saida}", file=sys.stderr)
+
+    if argumentos.fase == "bril":
+        if argumentos.saida is None:           # com -o, o JSON já foi para o arquivo
+            print(formatar_json(programa))
+        return 0
+
+    if argumentos.fase == "bril-texto":
+        print(formatar_texto(programa))
+        return 0
+
+    try:
+        execucao = executar(programa)
+    except BriliNaoEncontrado as erro:
+        print(erro, file=sys.stderr)
+        return 1
+
+    if argumentos.bruto:                       # um código de caractere por linha
+        sys.stdout.write(execucao.bruto)
+        sys.stdout.flush()
+        sys.stderr.write(execucao.stderr)
+        return execucao.codigo
+
+    sys.stdout.write(execucao.saida)
+    sys.stdout.flush()
+    rodape = execucao.rodape()
+    if rodape is not None:
+        if execucao.saida and not execucao.saida.endswith("\n"):
+            print()
+        print(rodape, file=sys.stderr)
+    return execucao.codigo
+
+
 # --------------------------------------------------------------------------
 # 3. Linha de comando
 # --------------------------------------------------------------------------
@@ -176,7 +260,8 @@ def executar_semantico(resultado: ParseResult, nome: str, ascii_only: bool) -> i
 def construir_parser_de_argumentos() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m cool_compiler.main",
-        description="Compilador didático de COOL: análise léxica, sintática e semântica.",
+        description="Compilador didático de COOL: análise léxica, sintática e "
+                    "semântica, e geração de código para Bril.",
     )
     parser.add_argument(
         "arquivo",
@@ -186,11 +271,27 @@ def construir_parser_de_argumentos() -> argparse.ArgumentParser:
     # O padrão é a fase mais avançada que existe: cada fase já roda as
     # anteriores, então "semantico" mostra tudo o que o compilador sabe fazer.
     # "ambas" continua significando léxico + sintático, como antes.
+    # As fases de geração NÃO viram o padrão: mudar o padrão mudaria a saída
+    # de quem já roda o compilador sem --fase.
     parser.add_argument(
         "--fase",
-        choices=("lexico", "sintatico", "semantico", "ambas"),
+        choices=("lexico", "sintatico", "semantico", "ambas",
+                 "bril", "bril-texto", "executar"),
         default="semantico",
-        help="qual fase executar (padrão: semantico; 'ambas' = tokens e AST)",
+        help="qual fase executar (padrão: semantico; 'ambas' = tokens e AST; "
+             "bril = JSON, bril-texto = texto, executar = roda no brili)",
+    )
+    parser.add_argument(
+        "--bruto",
+        action="store_true",
+        help="com --fase executar: mostra a saída do brili sem decodificar "
+             "(um código de caractere por linha)",
+    )
+    parser.add_argument(
+        "-o",
+        dest="saida",
+        metavar="ARQUIVO.json",
+        help="com as fases de geração: salva o programa Bril gerado neste arquivo",
     )
     parser.add_argument(
         "--expr",
@@ -238,6 +339,9 @@ def main() -> None:
 
     if argumentos.fase == "semantico":
         sys.exit(executar_semantico(resultado, caminho.name, argumentos.ascii))
+
+    if argumentos.fase in ("bril", "bril-texto", "executar"):
+        sys.exit(executar_geracao(resultado, caminho.name, argumentos))
 
     sys.exit(relatar(resultado, caminho.name, argumentos.ascii))
 
